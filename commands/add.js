@@ -320,33 +320,26 @@ add = {
                                 mainFile = path.join(dirName, mainFile);
                             }
 
-                            if (pkgType === 'directory') {
+                            if (pkgType === 'directory' || (mainFile && v.exists(mainFile))) {
                                 //The whole directory should be kept,
                                 //not an individual source file.
                                 sourceName = null;
+
+                                // 
+                                // Trying to guess the library author's intent by looking at
+                                // "main" and scanning for local AMD or CJS deps seems like a
+                                // source of headaches for library authors.  For example, it
+                                // fails to install when.js correctly.
+                                // So, for now, removing that entire branch, so that it
+                                // simply installs all the usual files for the lib instead of
+                                // trying to extract a single file.
+                                //
+                                // - bcavalier@vmware.com
+                                //
                             } else if (archiveInfo.fragment) {
                                 //Only one file is wanted out of the archive.
                                 sourceName = path.join(dirName, archiveInfo.fragment);
                                 defaultName = path.basename(sourceName);
-                            } else if (mainFile && v.exists(mainFile)) {
-                                //Read the main file. If it
-                                //calls define() and any of the dependencies
-                                //are relative, then keep the whole directory.
-                                mainContents = fs.readFileSync(mainFile, 'utf8');
-                                deps = parse.findDependencies(mainFile,
-                                       mainContents);
-                                if (!deps || !deps.length) {
-                                    deps = parse.findCjsDependencies(mainFile,
-                                           mainContents);
-                                }
-                                if (deps && deps.some(function (dep) {
-                                        return dep.indexOf('.') === 0;
-                                    })) {
-                                    sourceName = null;
-                                } else {
-                                    sourceName = mainFile;
-                                    defaultName = path.basename(mainFile);
-                                }
                             } else {
                                 //If the directory only contains one file, then
                                 //that is the install target.
